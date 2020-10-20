@@ -147,9 +147,6 @@ public:
   void ViewTexture(ResourceId ID, bool focus) override;
   void GotoLocation(int x, int y) override;
 
-  
-
-
   // ICaptureViewer
   void OnCaptureLoaded() override;
   void OnCaptureClosed() override;
@@ -187,9 +184,8 @@ private slots:
   void on_saveTex_clicked();
   void on_saveTexs_clicked();
   void on_saveAllTex_clicked();
-  void SaveStageResourcePreviews(ShaderStage stage, const rdcarray &resourceDetails,
-                                 const rdcarray &mapping, rdcarray &ResList, int &prevIndex,
-                                 bool copy, bool rw, const QString &savePath);
+
+  //void SaveStageResourcePreviews(ShaderStage stage, const rdcarray &resourceDetails,const rdcarray &mapping, rdcarray &ResList, int &prevIndex, bool copy, bool rw, const QString &savePath);
   void on_debugPixelContext_clicked();
   void on_pixelHistory_clicked();
 
@@ -202,9 +198,6 @@ private slots:
   void on_textureListFilter_currentIndexChanged(int index);
   void on_colSelect_clicked();
   void texture_itemActivated(RDTreeWidgetItem *item, int column);
-
-
-
 
   // manual slots
   void render_mouseClick(QMouseEvent *e);
@@ -231,6 +224,11 @@ private slots:
   void rangePoint_keyPress(QKeyEvent *e);
 
   void customShaderModified(const QString &path);
+
+  void SaveStageResourcePreviews(ShaderStage stage, const rdcarray<ShaderResource> &resourceDetails,
+                                 const rdcarray<Bindpoint> &mapping,
+                                 rdcarray<BoundResourceArray> &ResList, int &prevIndex, bool copy,
+                                 bool rw, const QString &savePath);
 
   void channelsWidget_mouseClicked(QMouseEvent *event);
   void channelsWidget_toggled(bool checked) { UI_UpdateChannels(); }
@@ -376,4 +374,3 @@ private:
 
   TextureDisplay m_TexDisplay;
 };
-
