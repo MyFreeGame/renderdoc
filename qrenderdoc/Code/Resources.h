@@ -74,6 +74,8 @@
   RESOURCE_DEF(plugin, "plugin.png")                                    \
   RESOURCE_DEF(plugin_add, "plugin_add.png")                            \
   RESOURCE_DEF(save, "save.png")                                        \
+  RESOURCE_DEF(save2, "save2.png")                                      \
+  RESOURCE_DEF(save3, "save3.png")                                      \
   RESOURCE_DEF(tick, "tick.png")                                        \
   RESOURCE_DEF(time, "time.png")                                        \
   RESOURCE_DEF(timeline_marker, "timeline_marker.png")                  \
@@ -94,7 +96,8 @@
   RESOURCE_DEF(topo_tristrip, "topologies/topo_tristrip.svg")           \
   RESOURCE_DEF(topo_tristrip_adj, "topologies/topo_tristrip_adj.svg")   \
   RESOURCE_DEF(action, "action.png")                                    \
-  RESOURCE_DEF(action_hover, "action_hover.png")
+  RESOURCE_DEF(action_hover, "action_hover.png")                        \
+
 
 struct Resource
 {

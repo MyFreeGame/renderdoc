@@ -147,6 +147,9 @@ public:
   void ViewTexture(ResourceId ID, bool focus) override;
   void GotoLocation(int x, int y) override;
 
+  
+
+
   // ICaptureViewer
   void OnCaptureLoaded() override;
   void OnCaptureClosed() override;
@@ -182,6 +185,11 @@ private slots:
   void on_resourceDetails_clicked();
   void on_texListShow_clicked();
   void on_saveTex_clicked();
+  void on_saveTexs_clicked();
+  void on_saveAllTex_clicked();
+  void SaveStageResourcePreviews(ShaderStage stage, const rdcarray &resourceDetails,
+                                 const rdcarray &mapping, rdcarray &ResList, int &prevIndex,
+                                 bool copy, bool rw, const QString &savePath);
   void on_debugPixelContext_clicked();
   void on_pixelHistory_clicked();
 
@@ -194,6 +202,9 @@ private slots:
   void on_textureListFilter_currentIndexChanged(int index);
   void on_colSelect_clicked();
   void texture_itemActivated(RDTreeWidgetItem *item, int column);
+
+
+
 
   // manual slots
   void render_mouseClick(QMouseEvent *e);
@@ -365,3 +376,4 @@ private:
 
   TextureDisplay m_TexDisplay;
 };
+

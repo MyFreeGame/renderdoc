@@ -3821,6 +3821,86 @@ void TextureViewer::on_saveTex_clicked()
   }
 }
 
+static TextureSave tmpSaveCfg;
+
+inline void TextureViewer::SaveStageResourcePreviews(ShaderStage stage,
+                                                     const rdcarray &resourceDetails,
+                                                     const rdcarray &mapping, rdcarray &ResList,
+                                                     int &prevIndex, bool copy, bool rw,
+                                                     const QString &savePath)
+
+{
+  for(int idx = 0; idx < mapping.count(); idx++)
+  {
+    const Bindpoint &key = mapping[idx];
+
+    const rdcarray<BoundResource> *resArray = NULL;
+    uint32_t dynamicallyUsedResCount = 1;
+    int32_t firstIndex = 0;
+
+    int residx = ResList.indexOf(key);
+    if(residx >= 0)
+    {
+      resArray = &ResList[residx].resources;
+      dynamicallyUsedResCount = ResList[residx].dynamicallyUsedCount;
+      firstIndex = ResList[residx].firstIndex;
+    }
+
+    int arrayLen = resArray != NULL ? resArray->count() : 1;
+
+    const bool collapseArray = arrayLen > 8 && (dynamicallyUsedResCount > 20 || m_ShowUnused);
+
+    for(int i = 0; i < arrayLen; i++)
+    {
+      int arrayIdx = firstIndex + i;
+
+      if(resArray && i >= resArray->count())
+        break;
+
+      if(resArray && !resArray->at(i).dynamicallyUsed)
+        continue;
+
+      BoundResource res = {};
+
+      if(resArray)
+        res = resArray->at(i);
+
+      Following follow(*this, rw ? FollowType::ReadWrite : FollowType::ReadOnly, stage, idx,
+                       arrayIdx);
+
+      // show if it's referenced by the shader - regardless of empty or not
+      bool show = key.used || copy;
+
+      // it's bound, but not referenced, and we have "show disabled"
+      show = show || (m_ShowUnused && res.resourceId != ResourceId());
+
+      // it's empty, and we have "show empty"
+      show = show || (m_ShowEmpty && res.resourceId == ResourceId());
+
+      // it's the one we're following
+      show = show || (follow == m_Following);
+
+      if(!show)
+      {
+        continue;
+      }
+
+      tmpSaveCfg.resourceId = res.resourceId;
+      tmpSaveCfg.destType = FileType::TGA;
+      tmpSaveCfg.channelExtract = -1;
+      tmpSaveCfg.alphaCol = FloatVector(0, 0, 0, 0);
+
+      uint64_t currId = *((uint64_t *)&res.resourceId);
+      QString fn = QString(tr("%1\\%2.tga")).arg(savePath).arg(currId);
+
+      bool ret = false;
+      m_Ctx.Replay().BlockInvoke([this, &ret, fn](IReplayController *r) {
+        ret = r->SaveTexture(tmpSaveCfg, fn.toUtf8().data());
+      });
+    }
+  }
+}
+
 void TextureViewer::on_debugPixelContext_clicked()
 {
   if(m_PickedPoint.x() < 0 || m_PickedPoint.y() < 0)
@@ -4476,4 +4556,88 @@ void TextureViewer::customShaderModified(const QString &path)
   reloadCustomShaders(QString());
 
   recurse = false;
+}
+//---------------------------------------
+static TextureSave tmpSaveCfg;
+static uint captureBatch = 0;
+
+void TextureViewer::on_saveTexs_clicked()
+{
+  int outIndex = 0;
+  int inIndex = 0;
+
+  bool copy = false, clear = false, compute = false;
+  Following::GetDrawContext(m_Ctx, copy, clear, compute);
+
+  ShaderStage stages[] = {ShaderStage::Vertex, ShaderStage::Hull, ShaderStage::Domain,
+                          ShaderStage::Geometry, ShaderStage::Pixel};
+
+  int count = 5;
+
+  if(compute)
+  {
+    stages[0] = ShaderStage::Compute;
+    count = 1;
+  }
+
+  const rdcarray<ShaderResource> empty;
+
+  QString currDir;
+  for(int i = 0; i < 2048; ++i)
+  {
+    ++captureBatch;
+    currDir = QString(tr("d:\\capture\\cap_%1")).arg(captureBatch);
+    QDir dir(currDir);
+    if(dir.exists())
+    {
+      continue;
+    }
+
+    dir.mkpath(currDir);
+    break;
+  }
+
+  // display resources used for all stages
+  for(int i = 0; i < count; i++)
+  {
+    ShaderStage stage = stages[i];
+
+    m_ReadWriteResources[(uint32_t)stage] =
+        Following::GetReadWriteResources(m_Ctx, stage, !m_ShowUnused);
+    m_ReadOnlyResources[(uint32_t)stage] =
+        Following::GetReadOnlyResources(m_Ctx, stage, !m_ShowUnused);
+
+    const ShaderReflection *details = Following::GetReflection(m_Ctx, stage);
+    const ShaderBindpointMapping &mapping = Following::GetMapping(m_Ctx, stage);
+
+    SaveStageResourcePreviews(stage, details != NULL ? details->readOnlyResources : empty,
+                              mapping.readOnlyResources, m_ReadOnlyResources[(uint32_t)stage],
+                              inIndex, copy, false, currDir);
+  }
+}
+
+void TextureViewer::on_saveAllTex_clicked()
+{
+  for(const TextureDescription &tex : m_Ctx.GetTextures())
+  {
+    tmpSaveCfg.resourceId = tex.resourceId;
+    tmpSaveCfg.destType = FileType::TGA;
+    tmpSaveCfg.channelExtract = -1;
+    tmpSaveCfg.alphaCol = FloatVector(0, 0, 0, 0);
+
+    QString fn;
+    fn.sprintf("d:\\capture\\%d.tga", tex.resourceId);
+    
+    QFileInfo qi(fn);
+    QDir dir(qi.absoluteDir());
+    if (!dir.exists())
+    {
+      dir.makeAbsolute();
+    }
+
+    bool ret = false;
+    m_Ctx.Replay().BlockInvoke([this, &ret, fn](IReplayController *r) {
+      ret = r->SaveTexture(tmpSaveCfg, fn.toUtf8().data());
+    });
+  }
 }
